@@ -45,15 +45,6 @@ class Project:
         return self.notes.__iter__()
 
 
-    def save_content(self, id:int content:str):
-        open(path.join(self.folders['content']){id}.json', 'w').write(e.text)
-
-
-    @staticmethod
-    def load_content(id):
-        return open(Project.content_file(self.project, self.id))
-
-
     @staticmethod
     def _import_file(file, notes, project):
 

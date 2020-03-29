@@ -34,8 +34,14 @@ class Timestamp:
         return self.as_datetime.strftime(Timestamp.json_date_format)
 
 @dataclass
+class NoteId:
+    id: int
+    project: str
+
+
+@dataclass
 class Note:
-    id: str  # local id assigned at import; unique across projects
+    id: NoteId  # local id assigned at import; unique across projects
     title: str = None
     created: Timestamp = None
     updated: Timestamp = None
