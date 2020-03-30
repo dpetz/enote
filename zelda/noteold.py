@@ -39,7 +39,7 @@ class NoteId:
 
 
 @dataclass
-class Note:
+class NoteOld:
     id: NoteId  # local id assigned at import; unique across projects
     title: str = None
     updated: Timestamp = None
@@ -61,7 +61,3 @@ class Note:
     # @staticmethod
     # def from_dict(d):
     #    return Note(*d)
-
-
-
-

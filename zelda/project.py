@@ -4,7 +4,7 @@ import json
 from os import path, listdir, makedirs
 from shutil import rmtree
 
-from zelda.note import Note, Timestamp, NoteId
+from zelda.noteold import NoteOld, Timestamp, NoteId
 
 
 class Project:
@@ -14,12 +14,12 @@ class Project:
 
         self.project = project
         self.folders = dict( (f, path.join('./data', *[project, f]))
-                             for f in ['import', 'contents', 'notes'])
+                             for f in ['import', 'contents', 'note'])
 
-        notes_file = path.join(self.folders['notes'], 'all,json')
+        notes_file = path.join(self.folders['note'], 'all,json')
 
         if path.exists(notes_file):
-            self.notes = [Note(json.load(notes_file).update('project', project))]
+            self.notes = [NoteOld(json.load(notes_file).update('project', project))]
 
         else:  # import project
 
@@ -51,7 +51,7 @@ class Project:
 
         def _import_note(note_child_elements):
 
-            n = Note(NoteId(len(notes+1), project))
+            n = NoteOld(NoteId(len(notes + 1), project))
 
             while True:
                 ne = next(note_child_elements)

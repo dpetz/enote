@@ -2,7 +2,7 @@
 # export FLASK_ENV=development
 # flask run
 # flask init-db
-# http://127.0.0.1:5000/notes/find
+# http://127.0.0.1:5000/note/
 
 import os
 

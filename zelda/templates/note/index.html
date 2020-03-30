@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Notes{% endblock %}</h1>
+    {% if g.user %}
+        <a class="action" href="{{ url_for('note.links') }}">Extract Links</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% for note in notes %}
+        <article class="note">
+            <header>
+                <div>
+                    <h1>{{ note.title }}</h1>
+                    <div class="about">updated on {{ note.updated.strftime('%Y-%m-%d') }}</div>
+                </div>
+                {% if True %}
+                    <a class="action" href="{{ url_for('note.links', id=note.id) }}">Links</a>
+                {% endif %}
+            </header>
+            <p class="body">{{ '... content here ...' }}</p>
+        </article>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+    {% endfor %}
+{% endblock %}

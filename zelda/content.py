@@ -1,5 +1,5 @@
 from os import path
-from zelda.note import NoteId
+from zelda.noteold import NoteId
 
 
 class Content:
