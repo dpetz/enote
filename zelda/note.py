@@ -1,8 +1,7 @@
 from datetime import datetime
 from dataclasses import dataclass
 
-from models.content import Contents
-from models.project import Project
+from zelda.content import Content
 
 
 @dataclass
@@ -43,11 +42,10 @@ class NoteId:
 class Note:
     id: NoteId  # local id assigned at import; unique across projects
     title: str = None
-    created: Timestamp = None
     updated: Timestamp = None
 
     def content(self):
-        Contents.load(self.id)
+        Content.load(self.id)
 
     def to_dict(self, content=False):
 

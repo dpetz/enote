@@ -4,8 +4,7 @@ import json
 from os import path, listdir, makedirs
 from shutil import rmtree
 
-from models.content import Contents
-from models.note import Note, Timestamp
+from zelda.note import Note, Timestamp, NoteId
 
 
 class Project:
@@ -44,7 +43,6 @@ class Project:
     def __iter__(self):
         return self.notes.__iter__()
 
-
     @staticmethod
     def _import_file(file, notes, project):
 
@@ -53,7 +51,7 @@ class Project:
 
         def _import_note(note_child_elements):
 
-            n = Note(f'{project}/{len(notes)+1}')
+            n = Note(NoteId(len(notes+1), project))
 
             while True:
                 ne = next(note_child_elements)

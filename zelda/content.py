@@ -1,6 +1,5 @@
 from os import path
-
-from models.note import NoteId
+from zelda.note import NoteId
 
 
 class Content:
@@ -12,7 +11,6 @@ class Content:
     @staticmethod
     def save(nid: NoteId, body: str):
         open(Content._file(nid), 'w').write(body) \
-
 
     @staticmethod
     def load(nid: NoteId):

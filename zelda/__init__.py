@@ -1,3 +1,9 @@
+# export FLASK_APP=zelda
+# export FLASK_ENV=development
+# flask run
+# flask init-db
+# http://127.0.0.1:5000/notes/find
+
 import os
 
 from flask import Flask
@@ -28,5 +34,11 @@ def create_app(test_config=None):
     @app.route('/hello')
     def hello():
         return 'Hello, World!'
+
+    from . import db
+    db.init_app(app)
+
+    from . import notes
+    app.register_blueprint(notes.bp)
 
     return app
