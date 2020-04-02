@@ -38,7 +38,7 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
-    from . import notes
-    app.register_blueprint(notes.bp)
+    from . import note
+    app.register_blueprint(note.bp)
 
     return app

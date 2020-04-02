@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Import Notes{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+        <form method="post">
+            <label for="file">{{f}}</label>
+            <input type="text" id="file" name="file" value="zelda/data/import/Samples_3.enex"><br>
+            <input type="submit" value="Import">
+        </form>
+{% endblock %}
