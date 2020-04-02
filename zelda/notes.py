@@ -18,3 +18,34 @@ def index():
         ' FROM note ORDER BY updated DESC'
     ).fetchall()
     return render_template('note/index.html', notes=all_notes)
+
+
+@bp.route('/import', methods=('GET', 'POST'))
+@login_required
+def create():
+    """
+    Either the form is displayed,
+    or the posted data is validated and the post is added to the database
+    or an error is shown.
+    See https://flask.palletsprojects.com/en/1.1.x/tutorial/blog/
+    """
+    if request.method == 'POST':
+        title = request.form['folder']
+        error = None
+
+        if not folder:
+            error = 'Folder is required.'
+
+        if error is not None:
+            flash(error)
+        else:
+            db = get_db()
+            db.execute(
+                'INSERT INTO post (title, body, author_id)'
+                ' VALUES (?, ?, ?)',
+                (title, body, g.user['id'])
+            )
+            db.commit()
+            return redirect(url_for('blog.index'))
+
+    return render_template('notes/import.html')
