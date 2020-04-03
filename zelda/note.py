@@ -2,36 +2,43 @@ from os import listdir, makedirs, getcwd
 from os.path import join, isfile, exists
 from shutil import rmtree
 from datetime import datetime
-
-
-import xml.etree.ElementTree as ET
-
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
-)
-from werkzeug.security import check_password_hash, generate_password_hash
-
+from xml.etree import ElementTree
+from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
 from zelda.db import get_db
+import json
 
 bp = Blueprint('note', __name__, url_prefix='/note')
 
-folders = dict( (f, join('./data', f)) for f in ['resources'])
+
+def list_rows():
+    db = get_db()
+    return db.execute(
+        'SELECT id, title, updated'
+        ' FROM note ORDER BY updated DESC'
+    ).fetchall()
 
 
 @bp.route('/')
 def index():
-    db = get_db()
-    all_notes = db.execute(
-        'SELECT id, title, updated'
-        ' FROM note ORDER BY updated DESC'
-    ).fetchall()
-    return render_template('note/index.html', notes=all_notes)
+    return redirect(url_for('note.list_web'))
+
+
+@bp.route('/web/list')
+def list_web():
+    """ List all notes"""
+    return render_template('note/index.html', notes=list())
+
+
+@bp.route('/api/list')
+def list_json():
+    """ List all notes"""
+    return jsonify(json.dumps(list_rows()))
 
 
 @bp.route('/<int:id>/links')
 def links(id):
+    """"""
     pass
-
 
 
 @bp.route('/add', methods=('GET', 'POST'))
@@ -64,7 +71,7 @@ def import_from_path(path):
             import_from_path(path.join(path, f))
     else:
         # https://docs.python.org/3/library/xml.etree.elementtree.html
-        elements = ET.parse(path).iter()
+        elements = ElementTree.parse(path).iter()
         e = next(elements)
 
         while True:
@@ -91,10 +98,9 @@ def _import_note(note_child_elements):
     # from DTD: (title, content, created?, updated?, tag*, note-attributes?, resource*)
     note_child_tags = ['title', 'content', 'created', 'updated', 'note-attributes', 'resource']
 
-
     while True:
 
-        ne = next(note_child_elements) # not element
+        ne = next(note_child_elements)  # not element
         if ne.tag in note_child_tags:
             if ne.tag == 'title':
                 title = ne.text
@@ -109,12 +115,3 @@ def _import_note(note_child_elements):
             )
             db.commit()
             return ne
-
-
-def clear():
-    """Delete all imported notes and related/derived resources"""
-
-    # empty/create all project folders (except import folder)
-    for d in folders.values():
-            rmtree(d)
-            makedirs(d)
