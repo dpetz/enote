@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Notes{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="about"> ID  ,  Created  ,  Updated  ,  Actions </div>
+    {% for note in notes %}
+        <article class="note">
+            <h3>{{ note['title'] }}</h3>
+            <div class="about">
+                {{ note['id'] }} , {{ note['created'][5:16] }} , {{ note['updated'][5:16] }} ,
+                <a class="action" href="{{ url_for('note.view', id=note['id']) }}">View Details</a>
+            </div>
+        </article>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+    {% endfor %}
+{% endblock %}

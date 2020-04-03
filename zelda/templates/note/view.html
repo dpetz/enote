@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}View Note{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        <label for="title">Title</label>
+        <input name="title" id="title"
+               value="{{ note['title'] }}"  readonly>
+        <label for="created">Created</label>
+        <input name="created" id="created"
+               value="{{ note['created'] }}"  readonly>
+        <label for="updated">Updated</label>
+        <input name="updated" id="updated"
+               value="{{ note['updated'] }}"  readonly>
+        <label for="body">Content</label>
+        <!-- <textarea name="body" id="body" readonly>{{ note['content'] | safe}}</textarea> -->
+        {{ note['content'] | safe}}
+    </form>
+    <hr>
+    <form action="{{ url_for('note.delete_html', id=note['id']) }}" method="post">
+        <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+    </form>
+{% endblock %}

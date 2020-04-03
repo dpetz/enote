@@ -3,36 +3,59 @@ from os.path import join, isfile, exists
 from shutil import rmtree
 from datetime import datetime
 from xml.etree import ElementTree
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
+from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, abort
 from zelda.db import get_db
 import json
 
 bp = Blueprint('note', __name__, url_prefix='/note')
 
 
-def list_rows():
-    db = get_db()
-    return db.execute(
-        'SELECT id, title, updated'
-        ' FROM note ORDER BY updated DESC'
-    ).fetchall()
-
-
 @bp.route('/')
 def index():
-    return redirect(url_for('note.list_web'))
-
-
-@bp.route('/web/list')
-def list_web():
-    """ List all notes"""
-    return render_template('note/index.html', notes=list())
+    return redirect(url_for('note.list_html'))
 
 
 @bp.route('/api/list')
 def list_json():
+    """ Json list all notes as dictionaries """
+
+    return fetchall_into_json_response(get_db().execute(
+        'SELECT id, title, created, updated'
+        ' FROM note ORDER BY updated DESC'
+    ))
+
+
+def fetchall_into_json_response(cursor):
+    return jsonify([dict(zip([column[0] for column in cursor.description], row))
+                for row in cursor.fetchall()])
+
+
+def fetchone_into_json_response(cursor):
+    return jsonify(dict(zip([column[0] for column in cursor.description], cursor.fetchone())))
+
+
+def get_note(id):
+    note = fetchone_into_json_response(get_db().execute(
+        'SELECT id, title, created, updated, content'
+        ' FROM note WHERE id = ?',
+        (id,)
+    ))
+
+    if note.data is None:
+        abort(404, f"Note id {id} doesn't exist.")
+
+    return note.get_json()
+
+
+@bp.route('/web/list')
+def list_html():
     """ List all notes"""
-    return jsonify(json.dumps(list_rows()))
+    return render_template('note/list.html', notes=list_json().get_json())
+
+
+@bp.route('/web/<int:id>/view')
+def view(id):
+    return render_template('note/view.html', note=get_note(id))
 
 
 @bp.route('/<int:id>/links')
@@ -84,6 +107,19 @@ def import_from_path(path):
                 break
 
 
+@bp.route('/web/<int:id>/delete', methods=('POST',))
+def delete_html(id):
+    delete_json(id)
+    return redirect(url_for('note.list_html'))
+
+@bp.route('/api/<int:id>/delete', methods=('POST',))
+def delete_json(id):
+    get_note(id)
+    db = get_db()
+    db.execute('DELETE FROM note WHERE id = ?', (id,))
+    db.commit()
+    return jsonify(success=True)
+
 # https://stackoverflow.com/questions/10286204/the-right-json-date-format
 def from_iso_8601(json_date):
     return datetime.strptime(json_date, '%Y%m%dT%H%M%SZ')
@@ -91,6 +127,20 @@ def from_iso_8601(json_date):
 
 def to_iso_8601(date_time):
     return date_time.strftime('%Y%m%dT%H%M%SZ')
+
+
+def _import_note_attributes():
+    # <!ELEMENT note-attributes
+    # (subject-date?, latitude?, longitude?, altitude?, author?, source?,
+    # source-url?, source-application?, reminder-order?, reminder-time?,
+    # reminder-done-time?, place-name?, content-class?, application-data*)
+    pass
+
+def _import_resource():
+    # <!ELEMENT resource
+    # (data, mime, width?, height?, duration?, recognition?, resource-attributes?,
+    # alternate-data?)
+    pass
 
 
 def _import_note(note_child_elements):
@@ -104,14 +154,19 @@ def _import_note(note_child_elements):
         if ne.tag in note_child_tags:
             if ne.tag == 'title':
                 title = ne.text
+            elif ne.tag == 'created':
+                created = from_iso_8601(ne.text)
             elif ne.tag == 'updated':
                 updated = from_iso_8601(ne.text)
+            elif ne.tag == 'content':
+                content = ne.text
+
         else:
             db = get_db()
             db.execute(
-                'INSERT INTO note (title, updated)'
-                ' VALUES (?, ?)',
-                (title, updated)
+                'INSERT INTO note (title, created, updated, content)'
+                ' VALUES (?, ?, ?, ?)',
+                (title, created, updated, content)
             )
             db.commit()
             return ne
