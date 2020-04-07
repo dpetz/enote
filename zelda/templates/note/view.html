@@ -16,8 +16,9 @@
         <input name="updated" id="updated"
                value="{{ note['updated'] }}"  readonly>
         <label for="body">Content</label>
-        <!-- <textarea name="body" id="body" readonly>{{ note['content'] | safe}}</textarea> -->
         {{ note['content'] | safe}}
+        <label for="body_raw">Content (Raw) </label>
+        <textarea name="body" id="body" readonly>{{ note['content'] | safe}}</textarea>
     </form>
     <hr>
     <form action="{{ url_for('note.delete_html', id=note['id']) }}" method="post">
