@@ -41,64 +41,90 @@ def _import_resource():
     pass
 
 
-def import_from_path(path):
-    # import each file in import folder
+class ImportNotesDB:
+    """Parses XML and calls add_note for every  note element encountered. """
 
-    if not isfile(path):
-        for f in listdir(path):
-            import_from_path(path.join(path, f))
-    else:
-        # https://docs.python.org/3/library/xml.etree.elementtree.html
-        elements = ElementTree.parse(path).iter()
-        e = next(elements)
+    def add_note(self, title, created, updated, content):
+        """ Inserts note into DB. Overwrite for different behaviour. """
+        db = get_db()
+        db.execute(
+            'INSERT INTO note (title, created, updated, content)'
+            ' VALUES (?, ?, ?, ?)',
+            (title, created, updated, content)
+        )
+        db.commit()
+
+    def import_from_path(self, path):
+        """ Import each file in import folder """
+
+        if not isfile(path):
+            for f in listdir(path):
+                self.import_from_path(path.join(path, f))
+        else:
+            # https://docs.python.org/3/library/xml.etree.elementtree.html
+            elements = ElementTree.parse(path).iter()
+            e = next(elements)
+
+            while True:
+                try:
+                    if e.tag == 'note':
+                        e = self._import_note(elements)
+                    else:
+                        e = next(elements)
+                except StopIteration:
+                    break
+
+    def _import_note(self, note_child_elements):
+
+        # from DTD: (title, content, created?, updated?, tag*, note-attributes?, resource*)
+        note_child_tags = ['title', 'content', 'created', 'updated', 'note-attributes', 'resource']
+        title, created, updated, content = None, None, None, None
+
 
         while True:
-            try:
-                if e.tag == 'note':
-                    e = _import_note(elements)
-                else:
-                    e = next(elements)
-            except StopIteration:
-                break
+
+            ne = next(note_child_elements)  # not element
+            if ne.tag in note_child_tags:
+                if ne.tag == 'title':
+                    title = ne.text
+                elif ne.tag == 'created':
+                    created = from_iso_8601(ne.text)
+                elif ne.tag == 'updated':
+                    updated = from_iso_8601(ne.text)
+                elif ne.tag == 'content':
+                    content = ne.text
+
+            else:
+                self.add_note(title, created, updated, content)
+                return ne
 
 
-def _import_note(note_child_elements):
-
-    # from DTD: (title, content, created?, updated?, tag*, note-attributes?, resource*)
-    note_child_tags = ['title', 'content', 'created', 'updated', 'note-attributes', 'resource']
-
-    while True:
-
-        ne = next(note_child_elements)  # not element
-        if ne.tag in note_child_tags:
-            if ne.tag == 'title':
-                title = ne.text
-            elif ne.tag == 'created':
-                created = from_iso_8601(ne.text)
-            elif ne.tag == 'updated':
-                updated = from_iso_8601(ne.text)
-            elif ne.tag == 'content':
-                content = ne.text
-
-        else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO note (title, created, updated, content)'
-                ' VALUES (?, ?, ?, ?)',
-                (title, created, updated, content)
-            )
-            db.commit()
-            return ne
 
 
 def link_index():
 
-    with open('/Users/dpetzoldt/git/home/zelda/zelda/data/import/index.enex', "r") as f:
-        contents = f.read()
-        soup = BeautifulSoup(contents, 'HTML')
+    class ImportNoteContent(ImportNotesDB):
+        def __init__(self):
+            self.content = "No import yet"
 
-        return dict((link.get('href'), link.text) for
-                    link in soup.findAll('a', attrs={'href': re.compile("^evernote://")}))
+        def add_note(self, title, created, updated, content):
+            assert self.content == "No import yet", "File contains more than one note"
+            self.content = content
+
+    importer = ImportNoteContent()
+    importer.import_from_path('/Users/dpetzoldt/git/home/zelda/zelda/data/import/index.enex')
+
+    html = BeautifulSoup(importer.content, 'html.parser')
+
+    return dict((link.get('href'), link.text) for
+                link in html.findAll('a', {'href': re.compile('^evernote')}))
 
 
 print(link_index())
+
+"""
+# https://dev.evernote.com/doc/articles/note_links.php
+# evernote:///view/[userId]/[shardId]/[noteGuid]/[noteGuid]/
+'evernote:///view/536854/s1/0c1ee56e-d792-4e01-9f71-9ecb13fdea30/0c1ee56e-d792-4e01-9f71-9ecb13fdea30/':\
+    'Deep Learning'
+"""

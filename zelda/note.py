@@ -10,7 +10,7 @@ from zelda.db import get_db
 from zelda.util import (
     fetchall_into_json_response,
     fetchone_into_json_response,
-    import_from_path
+    ImportNotesDB
 )
 
 bp = Blueprint('note', __name__, url_prefix='/note')
@@ -90,7 +90,7 @@ def add():
         if file:
             file = join(getcwd(), file)
             if exists(file):
-                import_from_path(file)
+                ImportNotesDB().import_from_path(file)
                 return redirect(url_for('note.index'))
 
         flash(f'Not a file or path: {file}')
