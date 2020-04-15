@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from shutil import rmtree
 from xml.etree import ElementTree
 from os.path import join, isfile, exists
@@ -9,6 +10,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, sessi
 from bs4 import BeautifulSoup
 import re
 
+
 def fetchall_into_json_response(cursor):
     return jsonify([dict(zip([column[0] for column in cursor.description], row))
                     for row in cursor.fetchall()])
@@ -16,6 +18,7 @@ def fetchall_into_json_response(cursor):
 
 def fetchone_into_json_response(cursor):
     return jsonify(dict(zip([column[0] for column in cursor.description], cursor.fetchone())))
+
 
 # https://stackoverflow.com/questions/10286204/the-right-json-date-format
 def from_iso_8601(json_date):
@@ -80,7 +83,6 @@ class ImportNotesDB:
         note_child_tags = ['title', 'content', 'created', 'updated', 'note-attributes', 'resource']
         title, created, updated, content = None, None, None, None
 
-
         while True:
 
             ne = next(note_child_elements)  # not element
@@ -99,32 +101,55 @@ class ImportNotesDB:
                 return ne
 
 
+class GuidIndex:
+    """Links GUIDs  of  https://dev.evernote.com/doc/articles/note_links.php"""
+
+    def __init__(self, file='/Users/dpetzoldt/git/home/zelda/zelda/data/import/index.enex'):
+        """ Reads a file containing an exported table of content note.
+            Based on it creates/updates a mapping from note titles to note URIs
+            which can be used resolve links between notes.
+            Assumes table contains all notes added in application and titles did not change."""
+        self.file = file
+        self._titles_by_guid = None
+
+    def load(self):
+        class ImportNoteContent(ImportNotesDB):
+            def __init__(self):
+                self.content = "No import yet"
+
+            def add_note(self, title, created, updated, content):
+                assert self.content == "No import yet", "File contains more than one note"
+                self.content = content
+
+        importer = ImportNoteContent()
+        importer.import_from_path(self.file)
+
+        html = BeautifulSoup(importer.content, 'html.parser')
+
+        self._titles_by_guid = dict((GuidIndex.extract_guid(link.get('href')), link.text) for
+                                   link in html.find_all('a', {'href': re.compile('^evernote')}))
+
+    def lookup_title(self, guid):
+        if not self._titles_by_guid:
+            self.load()
+        return self._titles_by_guid[guid]
+
+    @staticmethod
+    def extract_guid(link):
+        """ Works for note links like
+            evernote:///view/[userId]/[shardId]/[noteGuid]/[noteGuid]/
+            and for in app links like
+            https://[service]/shard/[shardId]/nl/[userId]/[noteGuid]/
+            Assumes GUIDs have format https://de.wikipedia.org/wiki/Globally_Unique_Identifier
+            """
+        return re.compile(r'[a-f\d-]+/$').search(link).group(0)[:-1]
 
 
-def link_index():
-
-    class ImportNoteContent(ImportNotesDB):
-        def __init__(self):
-            self.content = "No import yet"
-
-        def add_note(self, title, created, updated, content):
-            assert self.content == "No import yet", "File contains more than one note"
-            self.content = content
-
-    importer = ImportNoteContent()
-    importer.import_from_path('/Users/dpetzoldt/git/home/zelda/zelda/data/import/index.enex')
-
-    html = BeautifulSoup(importer.content, 'html.parser')
-
-    return dict((link.get('href'), link.text) for
-                link in html.findAll('a', {'href': re.compile('^evernote')}))
+# print(len(GuidIndex().titles_by_guid))
 
 
-print(link_index())
-
-"""
-# https://dev.evernote.com/doc/articles/note_links.php
-# evernote:///view/[userId]/[shardId]/[noteGuid]/[noteGuid]/
-'evernote:///view/536854/s1/0c1ee56e-d792-4e01-9f71-9ecb13fdea30/0c1ee56e-d792-4e01-9f71-9ecb13fdea30/':\
-    'Deep Learning'
-"""
+def test_extract_guid():
+    note_link = 'evernote:///view/536854/s1/73d53dcc-c4c3-40c6-aeff-55138da5ec26/73d53dcc-c4c3-40c6-aeff-55138da5ec26/'
+    assert GuidIndex.extract_guid(note_link) == '73d53dcc-c4c3-40c6-aeff-55138da5ec26'
+    inapp_note_link = 'https://www.evernote.com/shard/s1//nl/536854/0c1ee56e-d792-4e01-9f71-9ecb13fdea30'
+    assert GuidIndex.extract_guid(inapp_note_link) == '73d53dcc-c4c3-40c6-aeff-55138da5ec26'

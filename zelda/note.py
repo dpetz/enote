@@ -10,7 +10,8 @@ from zelda.db import get_db
 from zelda.util import (
     fetchall_into_json_response,
     fetchone_into_json_response,
-    ImportNotesDB
+    ImportNotesDB,
+    GuidIndex
 )
 
 bp = Blueprint('note', __name__, url_prefix='/note')
@@ -53,7 +54,7 @@ def view_html(id):
     note = view_api(id)
 
     if note.data is None:
-        abort(404, f"Note id {id} doesn't exist.")
+        abort(404, f"Note id {id} does not exist.")
 
     return render_template('note/view.html', note=note.get_json())
 
@@ -69,7 +70,7 @@ def links_json(id, content=None):
     links = {
         'external': [(link.get('href'), link.text) for link in
             soup.findAll('a', attrs={'href': re.compile("^https?://")})],
-        'internal': [(link.get('href'), link.text, link_index[link.get('href')]) for link in
+        'internal': [(link.get('href'), link.text) for link in
                      soup.findAll('a', attrs={'href': re.compile("^evernote://")})],
     }
 
@@ -98,11 +99,11 @@ def add():
     return render_template('note/add.html')
 
 
-
 @bp.route('/web/<int:id>/delete', methods=('POST',))
 def delete_html(id):
     delete_json(id)
     return redirect(url_for('note.list_html'))
+
 
 @bp.route('/api/<int:id>/delete', methods=('POST',))
 def delete_json(id):
@@ -112,5 +113,26 @@ def delete_json(id):
     return jsonify(success=True)
 
 
+@bp.route('/api/find')
+def find():
+    """Retrieves local id from DB. Raises KeyError otherwise."""
+
+    guid = request.args.get('guid')
+
+    assert guid, "Missing parameter: guid"
+
+    idx = g.setdefault('index', GuidIndex())
+
+    title = idx.lookup_title(guid)
+
+    if not title:
+        abort(404)
 
 
+    cursor = get_db().execute(
+        "SELECT id, title, created, updated, content"
+        " FROM note WHERE title = ?",
+        (title,)
+    )
+
+    return fetchall_into_json_response(cursor)
