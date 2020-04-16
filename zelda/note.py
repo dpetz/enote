@@ -111,44 +111,44 @@ def delete_json(id):
     return jsonify(success=True)
 
 
-@bp.route('/api/toc', methods=('POST', 'GET'))
+@bp.route('/api/toc', methods=('POST', 'GET', 'DELETE'))
 def toc():
-    """POST without filename clears the TOC.
-       POST with file name adds the file to the TOC
-       GET returns number of entries in TOC grouped by if their title match an imported note. """
+    """DELETE to wipe out the ToC.
+       POST with file name adds the file to the ToC
+       GET to return ToC entries """
 
-    if request.method == 'POST':
+    db = get_db()
 
-        file_param = request.form.get('file')
-        # for GET this would be request.args instead
-        # form.get('file') returns None while form['file'] will abort
-        db = get_db()
+    def size():
+        return db.execute("SELECT COUNT(*) FROM toc").fetchone()[0]
 
-        def size():
-            return db.execute("SELECT COUNT(*) FROM toc").fetchone()[0]
-
-        if file_param:
-            toc_file = join(getcwd(), file_param)
-            if not isfile(toc_file):
-                abort(404, f"File not found:{toc_file}")
-            titles_by_guids = import_toc(toc_file)
-            db.executemany("INSERT INTO toc (guid,title) VALUES (?, ?)", titles_by_guids.items())
-            result = {
-                'added': len(titles_by_guids),
-                'source': toc_file,
-                'total': size()
-            }
-        else:
-            db.execute("DELETE FROM toc")
-            result = {'deleted': size()}
-
-        db.commit()
-        return jsonify(result)
-
-    else:  # GET
-        return fetchall_into_json_response(get_db().execute(
+    if request.method == 'GET':
+        return fetchall_into_json_response(db.execute(
             'SELECT guid, title FROM toc'))
 
+    elif request.method == 'DELETE':
+        size = size()
+        db.execute("DELETE FROM toc")
+        db.commit()
+        return {'deleted': size}
+
+    else:  # POST
+
+        file_param = request.form['file']
+        # for GET this would be request.args instead
+        # form.get('file') returns None while form['file'] will abort
+
+        toc_file = join(getcwd(), file_param)
+        if not isfile(toc_file):
+            abort(404, f"File not found:{toc_file}")
+        titles_by_guids = import_toc(toc_file)
+        db.executemany("INSERT INTO toc (guid,title) VALUES (?, ?)", titles_by_guids.items())
+        db.commit()
+        return jsonify({
+            'added': len(titles_by_guids),
+            'source': toc_file,
+            'total': size()
+        })
 
 
 @bp.route('/api/find')
@@ -156,19 +156,34 @@ def find():
     """Retrieves local id from DB. Raises KeyError otherwise."""
 
     guid = request.args.get('guid')
+    title = request.args.get('title')
+    content = request.args.get('content')
 
-    if not guid:
-        abort(400, f"Missing parameter: guid")
+    if ((guid is not None) + (title is not None) + (content is not None)) != 1:
+        abort(400, f"Need exactly one of following parameters: guid, title, content")
 
-    title = get_db().execute(
-        'SELECT title FROM toc WHERE guid=?', (guid,)
-    ).fetchone()[0]
+    if guid:
+        title = get_db().execute(
+            'SELECT title FROM toc WHERE guid=?', (guid,)
+        ).fetchone()
 
-    if not title:
-        abort(404, f"Unknown GUID: {guid}")
+        if not title:
+            abort(404, f"Unknown GUID: {guid}")
 
-    return fetchall_into_json_response(get_db().execute(
-        "SELECT id, title, created, updated, imported, content"
-        " FROM note WHERE title = ?",
-        (title,)
-    ))
+        return fetchall_into_json_response(get_db().execute(
+            "SELECT id, title, created, updated, imported, content"
+            " FROM note WHERE title = ?",
+            (title[0],)
+        ))
+    if title:
+        return fetchall_into_json_response(get_db().execute(
+            "SELECT id, title, created, updated, imported, content"
+            " FROM note WHERE title LIKE ?",
+            (title,)
+        ))
+    if content:
+        return fetchall_into_json_response(get_db().execute(
+            "SELECT id, title, created, updated, imported, content"
+            " FROM note WHERE content LIKE ?",
+            (content,)
+        ))
