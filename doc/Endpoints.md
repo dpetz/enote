@@ -18,6 +18,13 @@ Delete note with ID 3:
 curl --request POST http://127.0.0.1:5000/note/api/3/delete
 ```
 
+
+Find a note by guid:
+```
+curl http://127.0.0.1:5000/note/api/find?guid=634581d4-1c57-4299-9b7b-ad34b46c641c | jq .
+
+```
+
 ## Table of Conents
 
 Import a [Table of Content][toc] file from ``[PROJECT_FOLDER]/import/toc.enex`:
@@ -31,7 +38,7 @@ To wipe out the table post w/o data:
 curl -X POST http://127.0.0.1:5000/note/api/toc
 ```
 
-To get all elements:
+Get all elements:
 ```
 curl http://127.0.0.1:5000/note/api/toc | jq '. | length'```
 ```

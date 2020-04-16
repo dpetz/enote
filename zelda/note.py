@@ -150,9 +150,6 @@ def toc():
             'SELECT guid, title FROM toc'))
 
 
-def test_toc_import():
-    return '/Users/dpetzoldt/git/home/zelda/zelda/data/import/toc.enex'
-
 
 @bp.route('/api/find')
 def find():
@@ -160,19 +157,18 @@ def find():
 
     guid = request.args.get('guid')
 
-    assert guid, "Missing parameter: guid"
+    if not guid:
+        abort(400, f"Missing parameter: guid")
 
-    idx = None
-
-    title = idx.lookup_title(guid)
+    title = get_db().execute(
+        'SELECT title FROM toc WHERE guid=?', (guid,)
+    ).fetchone()[0]
 
     if not title:
-        abort(404)
+        abort(404, f"Unknown GUID: {guid}")
 
-    cursor = get_db().execute(
-        "SELECT id, title, created, updated, content"
+    return fetchall_into_json_response(get_db().execute(
+        "SELECT id, title, created, updated, imported, content"
         " FROM note WHERE title = ?",
         (title,)
-    )
-
-    return fetchall_into_json_response(cursor)
+    ))
