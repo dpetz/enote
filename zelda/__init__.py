@@ -1,8 +1,4 @@
-# export FLASK_APP=zelda
-# export FLASK_ENV=development
-# flask run
-# flask init-db
-# http://127.0.0.1:5000/note/
+
 # curl http://127.0.0.1:5000/note/api/list
 
 import os

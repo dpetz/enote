@@ -11,7 +11,7 @@ from zelda.util import (
     fetchall_into_json_response,
     fetchone_into_json_response,
     ImportNotesDB,
-    GuidIndex
+    import_toc
 )
 
 bp = Blueprint('note', __name__, url_prefix='/note')
@@ -96,6 +96,8 @@ def add():
 
         flash(f'Not a file or path: {file}')
 
+
+
     return render_template('note/add.html')
 
 
@@ -113,6 +115,35 @@ def delete_json(id):
     return jsonify(success=True)
 
 
+
+@bp.route('/api/toc', methods=('POST',))
+def toc():
+    """POST without filename clears the TOC.
+       POST with file name adds the file to the TOC
+       GET returns number of entries in TOC grouped by if their title match an imported note. """
+
+    # curl --data "file=import%2Ftoc%2Eenex" http://127.0.0.1:5000/note/api/toc
+
+    toc_file = join(getcwd(), request.form['file'])
+    # for GET this would be request.args instead
+    # form.get returns None while the above will abort
+
+    titles_by_guids = import_toc(toc_file)
+    db = get_db()
+    db.executemany("INSERT INTO toc VALUES (?, ?)", titles_by_guids.items())
+    size = db.execute("SELECT COUNT(*) FROM toc")
+    db.commit()
+
+    return jsonify({
+        'added': len(titles_by_guids),
+        'source': toc_file,
+        'total': size
+    })
+
+def test_toc_import():
+    return '/Users/dpetzoldt/git/home/zelda/zelda/data/import/toc.enex'
+
+
 @bp.route('/api/find')
 def find():
     """Retrieves local id from DB. Raises KeyError otherwise."""
@@ -121,7 +152,7 @@ def find():
 
     assert guid, "Missing parameter: guid"
 
-    idx = g.setdefault('index', GuidIndex())
+    idx = None
 
     title = idx.lookup_title(guid)
 
