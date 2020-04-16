@@ -6,7 +6,6 @@ import re
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, abort
 from zelda.db import get_db
 
-
 from zelda.util import (
     fetchall_into_json_response,
     fetchone_into_json_response,
@@ -50,7 +49,6 @@ def list_html():
 
 @bp.route('/web/<int:id>/view')
 def view_html(id):
-
     note = view_api(id)
 
     if note.data is None:
@@ -69,7 +67,7 @@ def links_json(id, content=None):
 
     links = {
         'external': [(link.get('href'), link.text) for link in
-            soup.findAll('a', attrs={'href': re.compile("^https?://")})],
+                     soup.findAll('a', attrs={'href': re.compile("^https?://")})],
         'internal': [(link.get('href'), link.text) for link in
                      soup.findAll('a', attrs={'href': re.compile("^evernote://")})],
     }
@@ -96,8 +94,6 @@ def add():
 
         flash(f'Not a file or path: {file}')
 
-
-
     return render_template('note/add.html')
 
 
@@ -115,30 +111,44 @@ def delete_json(id):
     return jsonify(success=True)
 
 
-
-@bp.route('/api/toc', methods=('POST',))
+@bp.route('/api/toc', methods=('POST', 'GET'))
 def toc():
     """POST without filename clears the TOC.
        POST with file name adds the file to the TOC
        GET returns number of entries in TOC grouped by if their title match an imported note. """
 
-    # curl --data "file=import%2Ftoc%2Eenex" http://127.0.0.1:5000/note/api/toc
+    if request.method == 'POST':
 
-    toc_file = join(getcwd(), request.form['file'])
-    # for GET this would be request.args instead
-    # form.get returns None while the above will abort
+        file_param = request.form.get('file')
+        # for GET this would be request.args instead
+        # form.get('file') returns None while form['file'] will abort
+        db = get_db()
 
-    titles_by_guids = import_toc(toc_file)
-    db = get_db()
-    db.executemany("INSERT INTO toc VALUES (?, ?)", titles_by_guids.items())
-    size = db.execute("SELECT COUNT(*) FROM toc")
-    db.commit()
+        def size():
+            return db.execute("SELECT COUNT(*) FROM toc").fetchone()[0]
 
-    return jsonify({
-        'added': len(titles_by_guids),
-        'source': toc_file,
-        'total': size
-    })
+        if file_param:
+            toc_file = join(getcwd(), file_param)
+            if not isfile(toc_file):
+                abort(404, f"File not found:{toc_file}")
+            titles_by_guids = import_toc(toc_file)
+            db.executemany("INSERT INTO toc (guid,title) VALUES (?, ?)", titles_by_guids.items())
+            result = {
+                'added': len(titles_by_guids),
+                'source': toc_file,
+                'total': size()
+            }
+        else:
+            db.execute("DELETE FROM toc")
+            result = {'deleted': size()}
+
+        db.commit()
+        return jsonify(result)
+
+    else:  # GET
+        return fetchall_into_json_response(get_db().execute(
+            'SELECT guid, title FROM toc'))
+
 
 def test_toc_import():
     return '/Users/dpetzoldt/git/home/zelda/zelda/data/import/toc.enex'
@@ -158,7 +168,6 @@ def find():
 
     if not title:
         abort(404)
-
 
     cursor = get_db().execute(
         "SELECT id, title, created, updated, content"
