@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from os.path import join, isfile, exists
 from os import listdir, makedirs, getcwd
 from datetime import datetime
-from zelda.db import get_db
+from app.db import get_db
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, abort
 from bs4 import BeautifulSoup
 import re
@@ -101,7 +101,7 @@ class ImportNotesDB:
                 return ne
 
 
-def import_toc(file='/Users/dpetzoldt/git/home/zelda/zelda/data/import/toc.enex'):
+def import_toc(file='/Users/dpetzoldt/git/home/app/app/data/import/toc.enex'):
     """ Reads a file containing an exported table of content note.
           Based on it creates/updates a mapping from note titles to note URIs
           which can be used resolve links between notes.
@@ -125,8 +125,9 @@ def import_toc(file='/Users/dpetzoldt/git/home/zelda/zelda/data/import/toc.enex'
 
     html = BeautifulSoup(importer.content, 'html.parser')
 
-    return dict((extract_guid(link.get('href')), link.text) for
-                                link in html.find_all('a', {'href': re.compile('^evernote')}))
+    tags = html.find_all('a', {'href': re.compile('^evernote')})
+
+    return dict((extract_guid(tag.get('href')), tag.text) for tag in tags)
 
 
 def extract_guid(link):

@@ -3,8 +3,7 @@ import tempfile
 
 import pytest
 
-from zelda import create_app, db
-
+from app import create_app, db
 
 @pytest.fixture
 def client():

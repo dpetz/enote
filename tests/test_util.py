@@ -1,4 +1,4 @@
-from zelda.util import extract_guid
+from app.util import extract_guid
 
 
 def test_extract_guid():
