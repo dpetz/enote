@@ -1,4 +1,8 @@
-* HTML does not support DELETE or PUT for [unclear reasons][html-delete]
+* Run ``--with-threads`` to requests model endpoints from view endpoints
+
+* In HTML [delete via POST] as there is [no Delete in HTML]
+
+* Of the different [Strategies of API Versioning] I pick the simplest and insert ``v1`` in my API endpoint URLs.
 
 * Declare custom CLI commands via the ``@click.command`` decorator (see [db.py](app/db.py))
 
@@ -12,8 +16,10 @@ with ``html``, Models respond with ``json`` payloads. Models act as API for both
 persistence from file based json to ``SQlite`` works well.
 
 
+[delete via POST]: https://dev.to/moz5691/method-override-for-put-and-delete-in-html-3fp2
+[Strategies of API Versioning]: https://www.xmatters.com/blog/devops/blog-four-rest-api-versioning-strategies/
 [Flask Testing]: https://flask.palletsprojects.com/en/1.1.x/testing/
 [Flask Project Structure Guidance]: https://exploreflask.com/en/latest/organizing.html
-[html-delete]: https://softwareengineering.stackexchange.com/a/211790 
+[no Delete in HTML]: https://softwareengineering.stackexchange.com/a/211790 
 [json-routing]: https://stackoverflow.com/questions/49631072/how-to-return-also-json-and-render-template-in-flask
 [Flask Blog Tutorial]: https://flask.palletsprojects.com/en/1.1.x/tutorial/

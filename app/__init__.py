@@ -27,13 +27,6 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    # a simple page that says hello
-    """
-    @app.route('/')
-    def hello():
-        return redirect(url_for('note'))
-    """
-
     from . import db
     db.init_app(app)
 

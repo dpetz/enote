@@ -21,7 +21,7 @@
         <textarea name="body" id="body" readonly>{{ note['content'] | safe}}</textarea>
     </form>
     <hr>
-    <form action="{{ url_for('web.note', id=note['id']) }}" method="delete">
+    <form action="{{ url_for('web.delete', id=note['id']) }}" method="post">
         <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
     </form>
 {% endblock %}

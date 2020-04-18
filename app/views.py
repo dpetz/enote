@@ -3,7 +3,7 @@ from os.path import join, exists
 from app import models
 from flask import Blueprint, flash, redirect, render_template, request, url_for, abort
 from app.util import ImportNotesDB
-
+import requests
 bp = Blueprint('web', __name__, url_prefix='/')
 
 
@@ -13,20 +13,21 @@ def index():
     return render_template('note/index.html', notes=models.notes().get_json())
 
 
-@bp.route('/<int:id>', methods=('GET', 'DELETE'))
+@bp.route('/<int:id>/delete', methods=('POST',))
+def delete(id):
+    requests.delete( url_for('v1.note', id=id, _external=True))
+    return redirect(url_for('web.index'))
+
+
+@bp.route('/<int:id>')
 def note(id):
 
-    if request.method == 'DELETE':
-        models.note(id)
-        return redirect(url_for('web.index'))
+    response = models.note(id)
 
-    else:  # GET
-        response = models.note(id)
+    if response.data is None:
+        abort(404, f"Note id {id} does not exist.")
 
-        if response.data is None:
-            abort(404, f"Note id {id} does not exist.")
-
-        return render_template('note/note.html', note=response.get_json())
+    return render_template('note/note.html', note=response.get_json())
 
 
 

@@ -25,5 +25,5 @@ web.note          DELETE, GET        /<int:id>
 
 * [Endpoints](doc/Endpoints.md) for both a browser and a CLI
 * [Insights](doc/Insights.md) for design decisions etc.
-* [Todos](doc/Todos.md) such as unit tests
+* [Backlog](doc/Backlog.md) such as unit tests
 
