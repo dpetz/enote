@@ -10,11 +10,14 @@
 
 * Different routes for html and for json [preferable] over branching by request type). Split code into
 _Views_ and _Models_ following this [Flask Project Structure Guidance]. Views respond
-with ``html``, Models respond with ``json`` payloads. Models act as API for both the Views and command line interfaces (CLI)
+with ``html``, Models respond with ``json`` payloads.
+
+* Models act as API/backend for both the Views and command line interfaces (CLI).
+This helps to keep them in synch and tested with the runtime overhead (additional requests & jsons)
+being neglectable.
 
 * Refactoring according to the [Flask Blog Tutorial] incl. moving
 persistence from file based json to ``SQlite`` works well.
-
 
 [delete via POST]: https://dev.to/moz5691/method-override-for-put-and-delete-in-html-3fp2
 [Strategies of API Versioning]: https://www.xmatters.com/blog/devops/blog-four-rest-api-versioning-strategies/

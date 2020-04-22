@@ -44,64 +44,57 @@ def _import_resource():
     pass
 
 
-class ImportNotesDB:
-    """Parses XML and calls add_note for every  note element encountered. """
+def import_notes_to_handler(path, handler):
+    """ Import notes from XML file generated via export from Evernote client
+    :param path: file (absolute or relative to project folder) or folder (to import all files recursively)
+    :param handler: function to be called for each notes. Must have named argument for each note element
+    :return: number of imported notes
+    """
 
-    def add_note(self, title, created, updated, content):
-        """ Inserts note into DB. Overwrite for different behaviour. """
-        db = get_db()
-        db.execute(
-            'INSERT INTO note (title, created, updated, content)'
-            ' VALUES (?, ?, ?, ?)',
-            (title, created, updated, content)
-        )
-        db.commit()
+    path = join(getcwd(), path)
+    counter = 0
 
-    def import_from_path(self, path):
-        """ Import each file in import folder """
+    # If path is folder recurse
+    if not isfile(path):
+        for f in listdir(path):
+            counter += import_notes(path.join(path, f))
+        return counter
 
-        if not isfile(path):
-            for f in listdir(path):
-                self.import_from_path(path.join(path, f))
-        else:
-            # https://docs.python.org/3/library/xml.etree.elementtree.html
-            elements = ElementTree.parse(path).iter()
+    # Otherwise parses XML by calling handler for every note element encountered.
+
+    # see https://docs.python.org/3/library/xml.etree.elementtree.html
+    elements = ElementTree.parse(path).iter()
+
+    # from DTD: (title, content, created?, updated?, tag*, note-attributes?, resource*)
+    note_child_tags = ['title', 'content', 'created', 'updated', 'note-attributes', 'resource']
+
+    while True:
+        try:
             e = next(elements)
-
-            while True:
-                try:
-                    if e.tag == 'note':
-                        e = self._import_note(elements)
+            if e.tag == 'note':
+                title, created, updated, content = None, None, None, None
+                while True:
+                    e = next(elements)
+                    if e.tag in note_child_tags:
+                        if e.tag == 'title':
+                            title = e.text
+                        elif e.tag == 'created':
+                            created = from_iso_8601(e.text)
+                        elif e.tag == 'updated':
+                            updated = from_iso_8601(e.text)
+                        elif e.tag == 'content':
+                            content = e.text
                     else:
-                        e = next(elements)
-                except StopIteration:
-                    break
+                        handler(title, created, updated, content)
+                        break
+                counter += 1
+        except StopIteration:
+            break
 
-    def _import_note(self, note_child_elements):
-
-        # from DTD: (title, content, created?, updated?, tag*, note-attributes?, resource*)
-        note_child_tags = ['title', 'content', 'created', 'updated', 'note-attributes', 'resource']
-        title, created, updated, content = None, None, None, None
-
-        while True:
-
-            ne = next(note_child_elements)  # not element
-            if ne.tag in note_child_tags:
-                if ne.tag == 'title':
-                    title = ne.text
-                elif ne.tag == 'created':
-                    created = from_iso_8601(ne.text)
-                elif ne.tag == 'updated':
-                    updated = from_iso_8601(ne.text)
-                elif ne.tag == 'content':
-                    content = ne.text
-
-            else:
-                self.add_note(title, created, updated, content)
-                return ne
+    return counter
 
 
-def import_toc(file='/Users/dpetzoldt/git/home/app/app/data/import/toc.enex'):
+def import_toc(file='import/toc.enex'):
     """ Reads a file containing an exported table of content note.
           Based on it creates/updates a mapping from note titles to note URIs
           which can be used resolve links between notes.
@@ -112,18 +105,16 @@ def import_toc(file='/Users/dpetzoldt/git/home/app/app/data/import/toc.enex'):
     :return: Dictionary of GUIDs to titles
     """
 
-    class ImportNoteContent(ImportNotesDB):
-        def __init__(self):
-            self.content = "No import yet"
+    toc_content = None
 
-        def add_note(self, title, created, updated, content):
-            assert self.content == "No import yet", "File contains more than one note"
-            self.content = content
+    def handler(title, created, updated, content):
+        nonlocal toc_content
+        assert not toc_content, "File contains more than one note"
+        toc_content = content
 
-    importer = ImportNoteContent()
-    importer.import_from_path(file)
+    import_notes_to_handler(file, handler)
 
-    html = BeautifulSoup(importer.content, 'html.parser')
+    html = BeautifulSoup(toc_content, 'html.parser')
 
     tags = html.find_all('a', {'href': re.compile('^evernote')})
 

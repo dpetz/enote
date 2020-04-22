@@ -2,47 +2,73 @@ from os import getcwd
 from os.path import join, isfile, exists
 from bs4 import BeautifulSoup
 import re
+from sys import exc_info
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for, jsonify, abort
+from flask import Blueprint, redirect, request, url_for, jsonify, abort
 from app.db import get_db
 
 from app.util import (
     fetchall_into_json_response,
     fetchone_into_json_response,
-    ImportNotesDB,
+    import_notes_to_handler,
     import_toc
 )
 
 bp = Blueprint('v1', __name__, url_prefix='/v1')
 
 
-@bp.route('/notes')
+@bp.route('/notes', methods=('GET', 'POST'))
 def notes():
     """ Json response of list of all notes. """
-    cursor = get_db().execute(
-        'SELECT id, title, created, updated'
-        ' FROM note ORDER BY updated DESC'
-    )
-    return fetchall_into_json_response(cursor)
+
+    if request.method == 'GET':
+        cursor = get_db().execute(
+            'SELECT id, title, created, updated'
+            ' FROM note ORDER BY updated DESC'
+        )
+        return fetchall_into_json_response(cursor)
+
+    else:  # POST
+        path = request.form['path']
+
+        def handler(title, created, updated, content):
+            get_db().execute(
+                'INSERT INTO note (title, created, updated, content)'
+                ' VALUES (?, ?, ?, ?)',
+                (title, created, updated, content)
+            )
+
+        try:
+            count = import_notes_to_handler(path, handler)
+            # commit as transaction once all imported w/o exception
+            get_db().commit()
+            return jsonify(imported=count), 200
+
+        except FileNotFoundError:
+            e = exc_info()[0]
+            abort(f"Path not found: {path}")
 
 
 @bp.route('/note/<int:id>', methods=('GET', 'DELETE'))
 def note(id):
+    """GET or DELETE a note."""
 
-    if request.method == 'DELETE':
-        db = get_db()
-        db.execute('DELETE FROM note WHERE id = ?', (id,))
-        db.commit()
-        return jsonify(success=True)
-
-    else:  # GET
+    if request.method == 'GET':
         """Get note by ID as json response."""
         cursor = get_db().execute(
-            'SELECT id, title, created, updated, content'
-            ' FROM note WHERE id = ?',
+            'SELECT id, title, created, updated, content '
+            'FROM note WHERE id = ?',
             (id,)
         )
         return fetchone_into_json_response(cursor)
+
+    else:  # DELETE
+        db = get_db()
+        db.execute('DELETE FROM note WHERE id = ?', (id,))
+        db.commit()
+        return jsonify(success=True), 200
+
+
 
 
 @bp.route('/toc', methods=('POST', 'GET', 'DELETE'))

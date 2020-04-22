@@ -1,8 +1,5 @@
-from os import getcwd
-from os.path import join, exists
 from app import models
 from flask import Blueprint, flash, redirect, render_template, request, url_for, abort
-from app.util import ImportNotesDB
 import requests
 bp = Blueprint('web', __name__, url_prefix='/')
 
@@ -30,26 +27,25 @@ def note(id):
     return render_template('note/note.html', note=response.get_json())
 
 
-
 @bp.route('/import', methods=('GET', 'POST'))
-def import_notes():
+def import_():
     """
     If GET, form page is rendered.
     If POST, form data is validated and the post is added to the database
     Flashes message if data is invalid.
     """
-    if request.method == 'POST':
-        file = request.form['file']
+    if request.method == 'GET':
+        return render_template('note/import.html')
 
-        if file:
-            file = join(getcwd(), file)
-            if exists(file):
-                ImportNotesDB().import_from_path(file)
-                return redirect(url_for('web.index'))
+    else:  # POST
+        path = request.form['path']
+        r = requests.post(url_for('v1.import_notes', path=path, _external=True))
+        try:
+            flash(r.get_json()['imported'] + " notes imported.")
+        except AttributeError:
+            flash(f"Error:{r.content}", 'error')
+        return redirect(url_for('web.index'))
 
-        flash(f'Not a file or path: {file}')
-
-    return render_template('note/import.html')
 
 
 

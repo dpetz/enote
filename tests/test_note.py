@@ -1,5 +1,11 @@
 from tests import client
 
+
+def test_note_import(client, path='data/notes_3.enex'):
+    resp = client.post('/v1/notes', data={'path': path})
+    assert resp.get_json()['imported'] == 3
+
+
 def test_toc_empty(client):
     """Gets empty json """
     assert client.get('/v1/toc').get_json() == []
