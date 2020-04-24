@@ -18,6 +18,7 @@ def delete(id):
 
 @bp.route('/<int:id>')
 def note(id):
+    """ Fetches and renders a note with all its attributes. """
 
     response = models.note(id)
 
@@ -30,18 +31,17 @@ def note(id):
 @bp.route('/import', methods=('GET', 'POST'))
 def import_():
     """
-    If GET, form page is rendered.
-    If POST, form data is validated and the post is added to the database
-    Flashes message if data is invalid.
+    If GET, form page to enter path is rendered.
+    If POST, form data is forwarded to ``models.notes`` to trigger import
+    Flashes error message if data is invalid.
     """
     if request.method == 'GET':
         return render_template('note/import.html')
 
     else:  # POST
-        path = request.form['path']
-        r = requests.post(url_for('v1.import_notes', path=path, _external=True))
+        r = requests.post(url_for('v1.notes', path=request.values.get('path'), _external=True))
         try:
-            flash(r.get_json()['imported'] + " notes imported.")
+            flash(f"{r.json()['imported']} notes imported.")
         except AttributeError:
             flash(f"Error:{r.content}", 'error')
         return redirect(url_for('web.index'))

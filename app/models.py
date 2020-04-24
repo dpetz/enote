@@ -29,9 +29,10 @@ def notes():
         return fetchall_into_json_response(cursor)
 
     else:  # POST
-        path = request.form['path']
+        path = request.values.get('path')
 
         def handler(title, created, updated, content):
+            """Add XML fields as new note to database"""
             get_db().execute(
                 'INSERT INTO note (title, created, updated, content)'
                 ' VALUES (?, ?, ?, ?)',
@@ -129,7 +130,7 @@ def links(id, content=None):
 @bp.route('/find')
 def find():
     """Get note by guid, title match, or content match.
-       Exactly one of following parameters expected: guid, title, content."""
+       Exactly one of following URL parameters expected: guid, title, content."""
 
     guid = request.args.get('guid')
     title = request.args.get('title')
