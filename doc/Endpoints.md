@@ -1,14 +1,14 @@
-Browser entry page:
+To open in browser just call the port such as in:
 ```
-http://127.0.0.1:5000/note/web/list
+http://127.0.0.1:5000/
 ```
 
-The reminder of this page describes the RESTful API endpoints
-for a command line interface (CLI).
+The remainder of this page shows how to use the RESTful API endpoints
+from a command line interface (CLI).
 
 List all notes:
 ```
-curl http://127.0.0.1:5000/note/api/list | jq .
+curl http://127.0.0.1:5000/notes/v1 | jq .
 ```
 
 [jq][jq] can be installed via ``brew install jq``
@@ -52,6 +52,13 @@ Get all ToC elements:
 ```
 curl http://127.0.0.1:5000/note/api/toc | jq '. | length'```
 ```
+
+Import notes from an ``.enex`` file:
+```
+curl -X POST http://127.0.0.1:5000/v1/notes/?path=import/Samples_3.enex
+```
+
+
 
 [jq]: https://stedolan.github.io/jq/
 [toc]: https://help.evernote.com/hc/en-us/articles/209005667-How-to-create-a-table-of-contents-with-links-to-other-notes

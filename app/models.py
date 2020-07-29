@@ -29,7 +29,7 @@ def notes():
         return fetchall_into_json_response(cursor)
 
     else:  # POST
-        path = request.values.get('path')
+        path = request.values.get('path')  # Null if missing
 
         def handler(title, created, updated, content):
             """Add XML fields as new note to database"""
@@ -47,7 +47,7 @@ def notes():
 
         except FileNotFoundError:
             e = exc_info()[0]
-            abort(f"Path not found: {path}")
+            abort(jsonify(message=f"Path not found: {path}"), 404)
 
 
 @bp.route('/note/<int:id>', methods=('GET', 'DELETE'))
@@ -68,8 +68,6 @@ def note(id):
         db.execute('DELETE FROM note WHERE id = ?', (id,))
         db.commit()
         return jsonify(success=True), 200
-
-
 
 
 @bp.route('/toc', methods=('POST', 'GET', 'DELETE'))

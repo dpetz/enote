@@ -51,8 +51,11 @@ def import_notes_to_handler(path, handler):
     :return: number of imported notes
     """
 
-    path = join(getcwd(), path)
-    counter = 0
+    try:
+        path = join(getcwd(), path)
+        counter = 0
+    except:
+        raise FileNotFoundError
 
     # If path is folder recurse
     if not isfile(path):
