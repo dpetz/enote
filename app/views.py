@@ -9,6 +9,9 @@ def index():
     """ Page with a list of all notes. """
     return render_template('note/index.html', notes=models.notes().get_json())
 
+@bp.route('/titles')
+def titles():
+    return render_template('note/titles.html', notes=models.notes().get_json())
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 def delete(id):

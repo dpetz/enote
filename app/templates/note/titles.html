@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %} {{ Titles }} {% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    {% for note in notes %}
+                <a class="action" href="{{ url_for('web.note', id=note['id']) }}">
+                    {{ note['title'] }}
+                </a>
+        {% if not loop.last %}
+            ,
+        {% endif %}
+    {% endfor %}
+{% endblock %}

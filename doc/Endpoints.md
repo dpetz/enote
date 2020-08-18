@@ -35,30 +35,30 @@ http://127.0.0.1:5000/note/api/find?title=%25Learning | jq
 curl http://127.0.0.1:5000/note/api/find?content=%25Learning%25 | jq '. | length'
 ```
 
-## Table of Conents
+## Table of Contents
 
-Import a [Table of Content][toc] file from ``[PROJECT_FOLDER]/import/toc.enex`:
+Import a [Table of Content][toc] file from ``[PROJECT_FOLDER]/import/toc.enex``:
 ```
-curl -d file=import%2Ftoc%2Eenex http://127.0.0.1:5000/note/api/toc
+curl -d file=import/zelda_toc%2Eenex http://127.0.0.1:5000/v1/toc
 ```
 Remember encode [URL special characters][url-encode] like above.
 
-Wipe out the ToC with delete:
-```
-curl -X DELETE http://127.0.0.1:5000/note/api/toc
-```
-
 Get all ToC elements:
 ```
-curl http://127.0.0.1:5000/note/api/toc | jq '. | length'```
+curl http://127.0.0.1:5000/v1/toc | jq '. | length'
 ```
+
+Wipe out the ToC with delete:
+```
+curl -X DELETE http://127.0.0.1:5000/v1/toc
+```
+
+## Import Notes
 
 Import notes from an ``.enex`` file:
 ```
 curl -X POST http://127.0.0.1:5000/v1/notes/?path=import/Samples_3.enex
 ```
-
-
 
 [jq]: https://stedolan.github.io/jq/
 [toc]: https://help.evernote.com/hc/en-us/articles/209005667-How-to-create-a-table-of-contents-with-links-to-other-notes
