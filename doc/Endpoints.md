@@ -1,38 +1,45 @@
-To open in browser just call the port such as in:
-```
-http://127.0.0.1:5000/
-```
+To open in browser just call the port, typically ``http://127.0.0.1:5000/``
 
 The remainder of this page shows how to use the RESTful API endpoints
 from a command line interface (CLI).
 
+Endpoints API Version ``V1``
+
 List all notes:
 ```
-curl http://127.0.0.1:5000/notes/v1 | jq .
+curl http://127.0.0.1:5000/v1/notes | jq .
 ```
 
 [jq][jq] can be installed via ``brew install jq``
 
-Delete note with ID 3:
+Delete note by ID:
 ```
 curl --request POST http://127.0.0.1:5000/note/api/3/delete
 ```
 
-## Finding Notes
+The API is app specific and assigned during import.
 
-Find a note by guid:
+## Viewing and Finding Notes
+
+Fetch by ``id``:
+
+```
+curl http://127.0.0.1:5000/v1/note/212
+```
+
+Find by guid:
 ```
 curl http://127.0.0.1:5000/note/api/find?guid=634581d4-1c57-4299-9b7b-ad34b46c641c | jq .
 
 ```
 Or by [pattern matching][like] the title:
 ```
-http://127.0.0.1:5000/note/api/find?title=%25Learning | jq
+curl http://127.0.0.1:5000/v1/find?title=%25Learning | jq
 ```
 
-.. or the content:
+... or the content:
 ```
-curl http://127.0.0.1:5000/note/api/find?content=%25Learning%25 | jq '. | length'
+curl http://127.0.0.1:5000/v1/find?content=%25Learning%25 | jq '. | length'
 ```
 
 ## Table of Contents
@@ -58,6 +65,16 @@ curl -X DELETE http://127.0.0.1:5000/v1/toc
 Import notes from an ``.enex`` file:
 ```
 curl -X POST http://127.0.0.1:5000/v1/notes/?path=import/Samples_3.enex
+```
+
+## Analytics
+
+Extract Links:
+
+Append ``links`` to the URL for viewing:
+
+```
+curl http://127.0.0.1:5000/v1/note/212/links
 ```
 
 [jq]: https://stedolan.github.io/jq/
